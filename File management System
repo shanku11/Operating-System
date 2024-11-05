@@ -1,0 +1,159 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <limits.h>
+
+void display_menu() {
+    printf("\nFile Management System\n");
+    printf("1. Create a file\n");
+    printf("2. Read a file\n");
+    printf("3. Write to a file\n");
+    printf("4. Delete a file\n");
+    printf("5. List files in the directory\n");
+    printf("6. Exit\n");
+}
+
+void create_file() {
+    char filename[PATH_MAX];
+    printf("Enter the filename to create: ");
+    if (scanf("%99s", filename) == 1) { // Prevent buffer overflow
+        FILE *file = fopen(filename, "w");
+        if (file) {
+            fclose(file);
+            printf("File '%s' created successfully.\n", filename);
+        } else {
+            perror("Error creating file");
+        }
+    } else {
+        printf("Input error.\n");
+        while(getchar() != '\n'); // Clear input buffer
+    }
+}
+
+void read_file() {
+    char filename[PATH_MAX];
+    printf("Enter the filename to read: ");
+    if (scanf("%99s", filename) == 1) { // Prevent buffer overflow
+        FILE *file = fopen(filename, "r");
+        if (file) {
+            char ch;
+            printf("Content of '%s':\n", filename);
+            while ((ch = fgetc(file)) != EOF) {
+                putchar(ch);
+            }
+            fclose(file);
+            printf("\n");
+        } else {
+            perror("Error reading file");
+        }
+    } else {
+        printf("Input error.\n");
+        while(getchar() != '\n'); // Clear input buffer
+    }
+}
+
+void write_file() {
+    char filename[PATH_MAX], content[256];
+    printf("Enter the filename to write to: ");
+    if (scanf("%99s", filename) == 1) { // Prevent buffer overflow
+        printf("Enter content to write: ");
+        getchar(); // Consume newline left by scanf
+        if (fgets(content, sizeof(content), stdin)) {
+            FILE *file = fopen(filename, "a");
+            if (file) {
+                fputs(content, file);
+                fclose(file);
+                printf("Content written to '%s' successfully.\n", filename);
+            } else {
+                perror("Error opening file for writing");
+            }
+        } else {
+            printf("Input error.\n");
+        }
+    } else {
+        printf("Input error.\n");
+        while(getchar() != '\n'); // Clear input buffer
+    }
+}
+
+void delete_file() {
+    char filename[PATH_MAX];
+    printf("Enter the filename to delete: ");
+    if (scanf("%99s", filename) == 1) { // Prevent buffer overflow
+        if (remove(filename) == 0) {
+            printf("File '%s' deleted successfully.\n", filename);
+        } else {
+            perror("Error deleting file");
+        }
+    } else {
+        printf("Input error.\n");
+        while(getchar() != '\n'); // Clear input buffer
+    }
+}
+
+#include <sys/stat.h>
+
+void list_files() {
+    struct dirent *entry;
+    DIR *dp = opendir(".");
+    if (dp == NULL) {
+        perror("Unable to open directory");
+        return;
+    }
+    printf("Files in the current directory:\n");
+    while ((entry = readdir(dp))) {
+        // Skip directories
+        if (entry->d_name[0] == '.') // Skip hidden files and directories
+            continue;
+
+        // Use stat to check if it's a regular file
+        struct stat file_stat;
+        if (stat(entry->d_name, &file_stat) == 0) {
+            if (S_ISREG(file_stat.st_mode)) { // Check if it's a regular file
+                printf("%s\n", entry->d_name);
+            }
+        } else {
+            perror("Error getting file status");
+        }
+    }
+    closedir(dp);
+}
+
+
+int main() {
+    int choice;
+    while (1) {
+        display_menu();
+        printf("Select an option: ");
+        if (scanf("%d", &choice) != 1) {
+            printf("Input error. Please enter a number.\n");
+            while(getchar() != '\n'); // Clear input buffer
+            continue;
+        }
+
+        switch (choice) {
+            case 1:
+                create_file();
+                break;
+            case 2:
+                read_file();
+                break;
+            case 3:
+                write_file();
+                break;
+            case 4:
+                delete_file();
+                break;
+            case 5:
+                list_files();
+                break;
+            case 6:
+                printf("Exiting the program.\n");
+                return 0;
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+    return 0;
+}
